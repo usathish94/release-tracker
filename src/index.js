@@ -15,7 +15,7 @@ app.use('/api/health', healthRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/webhooks', webhooksRouter);
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
 });
