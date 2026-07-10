@@ -1,0 +1,36 @@
+# Optional local dev stack: backend + a local Postgres, so you can develop fully offline
+# before pointing DATABASE_URL at Supabase. Production always uses Supabase regardless.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: release_tracker
+      POSTGRES_PASSWORD: release_tracker
+      POSTGRES_DB: release_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - release_tracker_pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      CRICKET_API_KEY: ${CRICKET_API_KEY}
+      USE_LOCAL_DB: "false"
+      # Inside the compose network the DB is reachable at the "postgres" service name,
+      # not "localhost" (which is what .env's LOCAL_DATABASE_URL uses for host-run dev).
+      LOCAL_DATABASE_URL: ${LOCAL_DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      POLL_INTERVAL_MINUTES: ${POLL_INTERVAL_MINUTES:-20}
+      MATCH_DETAIL_TTL_MINUTES: ${MATCH_DETAIL_TTL_MINUTES:-3}
+    depends_on:
+      - postgres
+
+volumes:
+  release_tracker_pgdata:
