@@ -20,6 +20,7 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Listen server
 app.listen(env.port, () => {
   console.log(`release-tracker API listening on port ${env.port}`);
   startPollingScheduler();
