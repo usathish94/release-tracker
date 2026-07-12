@@ -7,6 +7,7 @@ export const telegramRouter = Router();
 telegramRouter.post(
   '/webhook',
   asyncHandler(async (req, res) => {
+    console.log('telegram webhook: ', JSON.stringify(req))
     if (env.telegramWebhookSecret) {
       const receivedSecret = req.get('X-Telegram-Bot-Api-Secret-Token');
       if (receivedSecret !== env.telegramWebhookSecret) {
