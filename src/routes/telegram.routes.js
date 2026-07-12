@@ -16,6 +16,8 @@ telegramRouter.post(
 
     const post = req.body?.channel_post || req.body?.message;
 
+    console.log(JSON.stringify(post))
+
     if (post && (!env.telegramChannelId || String(post.chat?.id) === String(env.telegramChannelId))) {
       console.log(`[telegram] ${post.chat?.title || post.chat?.id}: ${post.text || '(non-text message)'}`);
     }
