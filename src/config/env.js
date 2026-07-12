@@ -21,4 +21,7 @@ export const env = {
     .filter(Boolean),
   pollIntervalMinutes: Number(process.env.POLL_INTERVAL_MINUTES || 20),
   matchDetailTtlMinutes: Number(process.env.MATCH_DETAIL_TTL_MINUTES || 3),
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || null,
+  telegramChannelId: process.env.TELEGRAM_CHANNEL_ID || null,
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || null,
 };
