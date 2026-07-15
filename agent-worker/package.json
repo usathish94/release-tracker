@@ -1,0 +1,17 @@
+{
+  "name": "release-tracker-agent-worker",
+  "version": "1.0.0",
+  "description": "Runs headless Claude Code agent sessions against release-tracker and reports status to Telegram",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

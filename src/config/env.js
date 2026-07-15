@@ -24,4 +24,7 @@ export const env = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || null,
   telegramChannelId: process.env.TELEGRAM_CHANNEL_ID || null,
   telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || null,
+  agentTriggerSecret: process.env.AGENT_TRIGGER_SECRET || null,
+  agentWorkerUrl: process.env.AGENT_WORKER_URL || null,
+  agentWorkerSecret: process.env.AGENT_WORKER_SECRET || null,
 };
