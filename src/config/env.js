@@ -24,4 +24,8 @@ export const env = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || null,
   telegramChannelId: process.env.TELEGRAM_CHANNEL_ID || null,
   telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || null,
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
+  // Where the assistant endpoint connects to reach this app's own MCP server.
+  // Defaults to itself, since the MCP endpoint lives in this same process.
+  mcpServerUrl: process.env.MCP_SERVER_URL || `http://localhost:${process.env.PORT || 4000}/mcp`,
 };

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { listMatches, getMatch } from '../services/matchService.js';
+import { summarizeMatch } from '../services/summaryService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const matchesRouter = Router();
@@ -24,5 +25,18 @@ matchesRouter.get(
       return res.status(404).json({ error: 'Match not found' });
     }
     res.json({ match });
+  })
+);
+
+// Applies the match-summary skill (src/skills/match-summary/SKILL.md) to this
+// match's live data via Claude.
+matchesRouter.get(
+  '/:id/summary',
+  asyncHandler(async (req, res) => {
+    const summary = await summarizeMatch(req.params.id);
+    if (summary === null) {
+      return res.status(404).json({ error: 'Match not found' });
+    }
+    res.json({ summary });
   })
 );
