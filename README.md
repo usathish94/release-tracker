@@ -66,6 +66,11 @@ immediately on boot, then every `POLL_INTERVAL_MINUTES`).
 | POST   | `/api/webhooks/subscribe`     | `{ url, matchId? }` → `{ id, secret }`. Omit `matchId` to get all matches. |
 | DELETE | `/api/webhooks/subscribe/:id` | Unsubscribe                                                            |
 | POST   | `/api/webhooks/test`          | `{ subscriberId }` → sends one test payload to that subscriber          |
+| GET    | `/api/matches/:id/summary`    | 2-sentence Claude summary of the match, following the `match-summary` skill (`src/skills`) |
+| POST   | `/api/assistant/chat`         | `{ message }` → `{ reply, toolCalls }`. Claude answers using tools executed by our own MCP server at `/mcp` |
+| POST   | `/mcp`                        | This app's own MCP server (`list_matches`, `get_match`) over Streamable HTTP — point Claude Desktop/Code or any MCP client at it |
+
+`/api/matches/:id/summary` and `/api/assistant/chat` require `ANTHROPIC_API_KEY` to be set.
 
 ### Verifying webhook deliveries
 
@@ -103,7 +108,8 @@ substitution.)
 2. On https://render.com: **New → Web Service**, connect the repo. Render auto-detects the
    `Dockerfile` and offers "Docker" as the runtime.
 3. Set environment variables in the Render dashboard: `CRICKET_API_KEY`, `DATABASE_URL`
-   (your Supabase string), `CORS_ORIGINS` (your frontend's Render URL, added once you have it), `PORT=4000`.
+   (your Supabase string), `CORS_ORIGINS` (your frontend's Render URL, added once you have it), `PORT=4000`,
+   and `ANTHROPIC_API_KEY` (needed for `/api/matches/:id/summary` and `/api/assistant/chat`).
 4. Choose the **Free** instance type. No card required.
 5. Note: free Render web services sleep after 15 minutes of no traffic and take about a
    minute to wake back up on the next request — expected behavior, not a bug, and totally

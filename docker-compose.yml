@@ -29,6 +29,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       POLL_INTERVAL_MINUTES: ${POLL_INTERVAL_MINUTES:-20}
       MATCH_DETAIL_TTL_MINUTES: ${MATCH_DETAIL_TTL_MINUTES:-3}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     depends_on:
       - postgres
 

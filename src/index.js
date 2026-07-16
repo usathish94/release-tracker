@@ -5,6 +5,8 @@ import { healthRouter } from './routes/health.routes.js';
 import { matchesRouter } from './routes/matches.routes.js';
 import { webhooksRouter } from './routes/webhooks.routes.js';
 import { telegramRouter } from './routes/telegram.routes.js';
+import { mcpRouter } from './routes/mcp.routes.js';
+import { assistantRouter } from './routes/assistant.routes.js';
 import { startPollingScheduler } from './services/pollingScheduler.js';
 
 const app = express();
@@ -16,6 +18,8 @@ app.use('/api/health', healthRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/telegram', telegramRouter);
+app.use('/api/assistant', assistantRouter);
+app.use('/mcp', mcpRouter);
 
 app.use((err, req, res, _next) => {
   console.error(err);
