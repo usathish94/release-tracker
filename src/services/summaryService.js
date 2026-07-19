@@ -25,7 +25,7 @@ export async function summarizeMatch(matchId) {
   });
 
   const response = await client().messages.create({
-    model: 'claude-sonnet-5',
+    model: env.claudeModel,
     max_tokens: 300,
     system: skill.instructions,
     messages: [{ role: 'user', content: matchJson }],
