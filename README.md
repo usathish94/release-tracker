@@ -91,16 +91,19 @@ curl -X POST http://localhost:4000/api/webhooks/test -H "Content-Type: applicati
 
 ```
 docker build -t release-tracker .
-docker run --env-file .env -p 4000:4000 release-tracker
+docker run --env-file .env -v $(pwd)/certs:/app/certs:ro -p 4000:4000 release-tracker
 ```
+(`certs/` is gitignored and not baked into the image, so it needs an explicit bind mount if
+`KAFKA_SSL=true` — otherwise skip `-v` and leave `KAFKA_BROKERS` unset to run without Kafka.)
 
 Or, for a fully offline dev loop with a local Postgres instead of Supabase:
 ```
 docker compose up --build
 ```
-(`docker-compose.yml` spins up Postgres + the API together; set `CRICKET_API_KEY` in your
-shell or a `.env` file next to it — Compose reads `.env` automatically for variable
-substitution.)
+(`docker-compose.yml` spins up Postgres + the API together, and already bind-mounts `certs/`
+and forwards the `KAFKA_*` vars from your `.env` to the same Aiven broker used in production —
+there's no local Kafka container in this stack. Set `CRICKET_API_KEY` in your shell or a `.env`
+file next to it — Compose reads `.env` automatically for variable substitution.)
 
 ## Deploying to Render (free tier)
 
@@ -109,9 +112,16 @@ substitution.)
    `Dockerfile` and offers "Docker" as the runtime.
 3. Set environment variables in the Render dashboard: `CRICKET_API_KEY`, `DATABASE_URL`
    (your Supabase string), `CORS_ORIGINS` (your frontend's Render URL, added once you have it), `PORT=4000`,
-   and `ANTHROPIC_API_KEY` (needed for `/api/matches/:id/summary` and `/api/assistant/chat`).
-4. Choose the **Free** instance type. No card required.
-5. Note: free Render web services sleep after 15 minutes of no traffic and take about a
+   `ANTHROPIC_API_KEY`, and `CLAUDE_MODEL` (needed for `/api/matches/:id/summary` and
+   `/api/assistant/chat` / `/v2/chat` — defaults to `claude-haiku-4-5` if left unset).
+4. To enable Lighthouse audit events (optional — omitting `KAFKA_BROKERS` just makes publishing
+   a no-op), also set: `KAFKA_BROKERS`, `KAFKA_SSL=true`, `KAFKA_SASL_MECHANISM=plain`,
+   `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD`, `KAFKA_LIGHTHOUSE_TOPIC`. For the broker's CA
+   cert, set `KAFKA_SSL_CA` to the full contents of `certs/aiven-kafka-ca.pem` (not
+   `KAFKA_SSL_CA_PATH` — that file is gitignored and never makes it into the built image, so a
+   path won't resolve on Render).
+5. Choose the **Free** instance type. No card required.
+6. Note: free Render web services sleep after 15 minutes of no traffic and take about a
    minute to wake back up on the next request — expected behavior, not a bug, and totally
    fine for "delays are OK" live scores.
 

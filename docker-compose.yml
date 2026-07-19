@@ -18,18 +18,35 @@ services:
     restart: unless-stopped
     ports:
       - "4000:4000"
+    # certs/ is gitignored and never baked into the image (see Dockerfile), so the
+    # Aiven CA cert has to be bind-mounted in for local Kafka SSL to work.
+    volumes:
+      - ./certs:/app/certs:ro
     environment:
       PORT: 4000
       CRICKET_API_KEY: ${CRICKET_API_KEY}
-      USE_LOCAL_DB: "false"
-      # Inside the compose network the DB is reachable at the "postgres" service name,
-      # not "localhost" (which is what .env's LOCAL_DATABASE_URL uses for host-run dev).
-      LOCAL_DATABASE_URL: ${LOCAL_DATABASE_URL}
+      USE_LOCAL_DB: "true"
+      # Hardcoded (not ${LOCAL_DATABASE_URL}): inside the compose network the DB is
+      # reachable at the "postgres" service name, not "localhost" (which is what .env's
+      # LOCAL_DATABASE_URL is set to, for host-run `npm run dev`) — matches the postgres
+      # service's own credentials/db name above.
+      LOCAL_DATABASE_URL: postgres://release_tracker:release_tracker@postgres:5432/release_tracker
       DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       POLL_INTERVAL_MINUTES: ${POLL_INTERVAL_MINUTES:-20}
       MATCH_DETAIL_TTL_MINUTES: ${MATCH_DETAIL_TTL_MINUTES:-3}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-haiku-4-5}
+      # Same Aiven Kafka instance as production (no local broker in this stack).
+      # Leave KAFKA_BROKERS unset to run without Kafka — publishing becomes a no-op.
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-}
+      KAFKA_SSL: ${KAFKA_SSL:-false}
+      KAFKA_SASL_MECHANISM: ${KAFKA_SASL_MECHANISM:-plain}
+      KAFKA_SASL_USERNAME: ${KAFKA_SASL_USERNAME:-}
+      KAFKA_SASL_PASSWORD: ${KAFKA_SASL_PASSWORD:-}
+      KAFKA_LIGHTHOUSE_TOPIC: ${KAFKA_LIGHTHOUSE_TOPIC:-lighthouse.audit.events}
+      # Container path from the bind mount above, not the host-relative path in .env.
+      KAFKA_SSL_CA_PATH: /app/certs/aiven-kafka-ca.pem
     depends_on:
       - postgres
 

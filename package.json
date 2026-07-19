@@ -10,15 +10,18 @@
     "db:migrate": "node src/db/migrate.js",
     "telegram:set-webhook": "node src/scripts/setTelegramWebhook.js",
     "lint": "eslint .",
-    "build": "esbuild src/index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.cjs --minify"
+    "build": "esbuild src/index.js --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/index.cjs --minify"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.7.9",
+    "chrome-launcher": "^1.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "kafkajs": "^2.2.4",
+    "lighthouse": "^12.8.2",
     "node-cron": "^3.0.3",
     "pg": "^8.13.1",
     "zod": "^4.4.3"

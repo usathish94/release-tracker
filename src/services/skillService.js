@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 // Not import.meta.url-based: esbuild bundles src/index.js to a single CJS
@@ -36,4 +36,18 @@ export function loadSkill(skillName) {
   );
 
   return { name: meta.name, description: meta.description, instructions: body.trim() };
+}
+
+/**
+ * Lists every registered skill's name + description, without its full
+ * instruction body. Used to let the model pick a skill without paying the
+ * token cost of every skill's full instructions on every request.
+ */
+export function listSkills() {
+  return readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const { name, description } = loadSkill(entry.name);
+      return { name, description };
+    });
 }
