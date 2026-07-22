@@ -13,6 +13,7 @@ function mapRow(row) {
     device: row.device,
     categories: row.categories,
     authContext: row.auth_context,
+    auth: row.auth,
     result: row.result,
     error: row.error,
     kafkaPublishedAt: row.kafka_published_at,
@@ -30,7 +31,7 @@ const QUEUE_POSITION_SUBQUERY = `(
   WHERE q.status = 'queued' AND q.created_at <= t.created_at
 )`;
 
-export async function insertJob({ url, device, categories, authContext }) {
+export async function insertJob({ url, device, categories, authContext, auth = false }) {
   // Count queued jobs ahead of this one *before* inserting, then add 1 for itself.
   // (A single INSERT ... RETURNING combined with a subquery over the base table can't
   // do this in one round trip: Postgres's WITH/CTE snapshot rules mean a data-modifying
@@ -40,10 +41,16 @@ export async function insertJob({ url, device, categories, authContext }) {
   const { rows: aheadRows } = await pool.query(`SELECT count(*)::int AS ahead FROM lighthouse_jobs WHERE status = 'queued'`);
 
   const { rows } = await pool.query(
-    `INSERT INTO lighthouse_jobs (url, device, categories, auth_context)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO lighthouse_jobs (url, device, categories, auth_context, auth)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [url, device, categories ? JSON.stringify(categories) : null, authContext ? JSON.stringify(authContext) : null]
+    [
+      url,
+      device,
+      categories ? JSON.stringify(categories) : null,
+      authContext ? JSON.stringify(authContext) : null,
+      auth
+    ]
   );
 
   const job = mapRow(rows[0]);

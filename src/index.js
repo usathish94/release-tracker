@@ -12,6 +12,7 @@ import { lighthouseRouter } from './routes/lighthouse.routes.js';
 import { startPollingScheduler } from './services/pollingScheduler.js';
 import { startLighthouseWorker } from './services/lighthouseJobService.js';
 import { disconnectKafkaProducer } from './services/kafkaProducer.js';
+import { startLighthouseEventConsumer, disconnectKafkaConsumer } from './services/kafkaConsumer.js';
 
 const app = express();
 
@@ -36,12 +37,14 @@ const server = app.listen(env.port, () => {
   console.log(`release-tracker API listening on port ${env.port}`);
   startPollingScheduler();
   startLighthouseWorker();
+  startLighthouseEventConsumer().catch((err) => console.error('[kafka-consumer] failed to start:', err.message));
 });
 
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`);
   server.close();
   await disconnectKafkaProducer();
+  await disconnectKafkaConsumer();
   process.exit(0);
 }
 

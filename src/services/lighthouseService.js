@@ -1,4 +1,6 @@
 import { launch } from 'chrome-launcher';
+import puppeteer from 'puppeteer-core';
+import { env } from '../config/env.js';
 
 const DEFAULT_CATEGORIES = ['performance'];
 
@@ -74,20 +76,74 @@ function logReport({ url, device, scores, metrics }) {
 }
 
 /**
+ * Logs into the app using the env-configured credentials (LIGHTHOUSE_AUTH_*), driving
+ * the same Chrome instance chrome-launcher just opened via its remote-debugging port —
+ * so the resulting session cookies are already in that browser when Lighthouse audits it.
+ * Success is judged by URL change: login forms typically redirect off the login page
+ * once authenticated (e.g. instagram.com/accounts/login -> instagram.com), so if the
+ * pathname is unchanged after submitting, something went wrong (bad creds, validation
+ * error, unexpected page) and this throws rather than silently auditing the login page.
+ */
+async function performLoginFlow(port) {
+  const { loginUrl, username, password, usernameSelector, passwordSelector } = env.lighthouseAuth;
+  if (!loginUrl || !username || !password) {
+    throw new Error(
+      'Authenticated audit requested but LIGHTHOUSE_AUTH_LOGIN_URL/LIGHTHOUSE_AUTH_USERNAME/LIGHTHOUSE_AUTH_PASSWORD are not all configured'
+    );
+  }
+
+  // Connect (not launch): chrome-launcher already started this Chrome, and we want the
+  // login session to land in the same profile Lighthouse will audit next.
+  const browser = await puppeteer.connect({ browserURL: `http://localhost:${port}` });
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(loginUrl, { waitUntil: 'networkidle2' });
+
+    await page.waitForSelector(usernameSelector, { visible: true, timeout: 15000 });
+    await page.type(usernameSelector, username);
+
+    await page.waitForSelector(passwordSelector, { visible: true, timeout: 15000 });
+    await page.type(passwordSelector, password);
+
+    const loginPathname = new URL(loginUrl).pathname;
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 }),
+      page.keyboard.press('Enter')
+    ]);
+
+    if (new URL(page.url()).pathname === loginPathname) {
+      throw new Error(`Login did not navigate away from ${loginPathname} — check credentials/selectors`);
+    }
+
+    await page.close();
+  } finally {
+    // disconnect, not close: leaves chrome-launcher's Chrome process (and the session
+    // cookies just established) running for Lighthouse to audit against next.
+    browser.disconnect();
+  }
+}
+
+/**
  * Runs a Lighthouse performance audit against `url` using a locally-launched
  * headless Chrome instance and logs the resulting metrics to the console.
  *
- * `authContext` is a forward-looking extension point for phase 2 (authenticated
- * pages): pass `{ cookies, extraHeaders }` to inject a session cookie or auth
- * header into every request Lighthouse makes while auditing, without needing
- * to change this function's contract. A future phase can extend this further
- * (e.g. a Puppeteer login step against the same Chrome instance before the
- * audit runs) by adding an optional hook here.
+ * `authContext` injects a session cookie or auth header into every request Lighthouse
+ * makes (`{ cookies, extraHeaders }`) — for APIs/pages that accept a pre-obtained token.
+ *
+ * `authenticate: true` instead drives a real login form first (see performLoginFlow),
+ * using the shared LIGHTHOUSE_AUTH_* credentials — for pages that only accept an
+ * interactive login. Both reuse this same Chrome instance and metric-extraction code;
+ * they differ only in how the session gets established before Lighthouse runs.
  */
-export async function runLighthouseAudit(url, { device = 'mobile', categories, authContext } = {}) {
+export async function runLighthouseAudit(url, { device = 'desktop', categories, authContext, authenticate } = {}) {
   const chrome = await launch({ chromeFlags: CHROME_FLAGS });
 
   try {
+    if (authenticate) {
+      await performLoginFlow(chrome.port);
+    }
+
     const config = buildConfig({ device, categories });
 
     if (authContext?.cookies || authContext?.extraHeaders) {
@@ -97,8 +153,15 @@ export async function runLighthouseAudit(url, { device = 'mobile', categories, a
       };
     }
 
+    const lighthouseFlags = { port: chrome.port };
+    if (authenticate) {
+      // Lighthouse normally clears cookies/storage before auditing for a clean baseline;
+      // that would also wipe the session we just logged in with, so keep it for this run.
+      lighthouseFlags.disableStorageReset = true;
+    }
+
     const lighthouse = await loadLighthouse();
-    const result = await lighthouse(url, { port: chrome.port }, config);
+    const result = await lighthouse(url, lighthouseFlags, config);
     const lhr = result.lhr;
 
     const report = {

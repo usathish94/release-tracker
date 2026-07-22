@@ -41,6 +41,10 @@ export const env = {
       .filter(Boolean),
     clientId: process.env.KAFKA_CLIENT_ID || 'release-tracker',
     lighthouseTopic: process.env.KAFKA_LIGHTHOUSE_TOPIC || 'lighthouse.audit.events',
+    // Consumer group for kafkaConsumer.js. Kafka tracks each group's read position (offset)
+    // independently, so this must stay stable across restarts/deploys to keep resuming from
+    // where it left off rather than replaying from the beginning every time.
+    consumerGroupId: process.env.KAFKA_CONSUMER_GROUP_ID || 'release-tracker-lighthouse-consumer',
     // Plain unauthenticated broker (e.g. a local Docker Kafka for dev) needs none of these.
     // A hosted broker (Aiven, Confluent, etc.) sets KAFKA_SSL=true and, if it uses a private CA
     // rather than a publicly trusted one, either KAFKA_SSL_CA (inline PEM contents — handiest on
@@ -58,5 +62,21 @@ export const env = {
           password: process.env.KAFKA_SASL_PASSWORD || ''
         }
       : null
+  },
+  // Shared login credentials for auditing pages behind the app's own login form
+  // (POST /api/lighthouse/authenticated-audit). One fixed account for the server,
+  // not something callers supply per request — see src/services/lighthouseService.js.
+  lighthouseAuth: {
+    loginUrl: process.env.LIGHTHOUSE_AUTH_LOGIN_URL || null,
+    username: process.env.LIGHTHOUSE_AUTH_USERNAME || null,
+    password: process.env.LIGHTHOUSE_AUTH_PASSWORD || null,
+    // Defaults cover the common cases (an email/text/named-"username" field, and any
+    // input[type=password]) without needing app-specific config; override for anything unusual.
+
+    // usernameSelector:
+    //   process.env.LIGHTHOUSE_AUTH_USERNAME_SELECTOR || 'input[name="username"], input[type="email"], input[type="text"]',
+    // passwordSelector: process.env.LIGHTHOUSE_AUTH_PASSWORD_SELECTOR || 'input[type="password"]'
+    usernameSelector: 'input[name="email"]',
+    passwordSelector: 'input[type="password"]'
   }
 };

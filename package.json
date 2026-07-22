@@ -24,6 +24,7 @@
     "lighthouse": "^12.8.2",
     "node-cron": "^3.0.3",
     "pg": "^8.13.1",
+    "puppeteer-core": "^25.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

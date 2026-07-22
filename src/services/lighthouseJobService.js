@@ -26,7 +26,7 @@ function toPublicJob(job) {
   const publicJob = {
     id: job.id,
     status: job.status,
-    request: { url: job.url, device: job.device, categories: job.categories },
+    request: { url: job.url, device: job.device, categories: job.categories, auth: job.auth },
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     completedAt: job.completedAt
@@ -50,12 +50,13 @@ function toPublicJob(job) {
  * immediately. `enqueueLighthouseJob`/the worker are decoupled: this only
  * writes the row and nudges the worker via NOTIFY — it never runs Lighthouse itself.
  */
-export async function enqueueLighthouseJob({ url, device, categories, authContext }) {
+export async function enqueueLighthouseJob({ url, device, categories, authContext, auth }) {
   const job = await insertJob({
     url,
     device: device === 'desktop' ? 'desktop' : 'mobile',
     categories,
-    authContext
+    authContext,
+    auth
   });
   await notifyNewJob(job.id);
   return toPublicJob(job);
@@ -72,6 +73,7 @@ function buildEvent(job) {
     jobId: job.id,
     url: job.url,
     device: job.device,
+    auth: job.auth,
     completedAt: job.completedAt
   };
 
@@ -111,7 +113,8 @@ async function processNext() {
         const result = await runLighthouseAudit(job.url, {
           device: job.device,
           categories: job.categories,
-          authContext: job.authContext
+          authContext: job.authContext,
+          authenticate: job.auth
         });
         finished = await markJobCompleted(job.id, result);
       } catch (err) {

@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS lighthouse_jobs (
   device TEXT NOT NULL DEFAULT 'mobile',
   categories JSONB,
   auth_context JSONB,
+  -- True for jobs that should log in first (src/services/lighthouseService.js's
+  -- performLoginFlow, using the env-configured LIGHTHOUSE_AUTH_* credentials) before auditing.
+  auth BOOLEAN NOT NULL DEFAULT false,
   result JSONB,
   error TEXT,
   kafka_published_at TIMESTAMPTZ,
@@ -46,6 +49,9 @@ CREATE TABLE IF NOT EXISTS lighthouse_jobs (
   started_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ
 );
+
+-- Idempotent for deployments where lighthouse_jobs already existed before this column was added.
+ALTER TABLE lighthouse_jobs ADD COLUMN IF NOT EXISTS auth BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 CREATE INDEX IF NOT EXISTS idx_webhook_subscribers_match_id ON webhook_subscribers(match_id);

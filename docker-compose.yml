@@ -47,6 +47,9 @@ services:
       KAFKA_LIGHTHOUSE_TOPIC: ${KAFKA_LIGHTHOUSE_TOPIC:-lighthouse.audit.events}
       # Container path from the bind mount above, not the host-relative path in .env.
       KAFKA_SSL_CA_PATH: /app/certs/aiven-kafka-ca.pem
+      LIGHTHOUSE_AUTH_LOGIN_URL: ${LIGHTHOUSE_AUTH_LOGIN_URL:-}
+      LIGHTHOUSE_AUTH_USERNAME: ${LIGHTHOUSE_AUTH_USERNAME:-}
+      LIGHTHOUSE_AUTH_PASSWORD: ${LIGHTHOUSE_AUTH_PASSWORD:-}
     depends_on:
       - postgres
 
