@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
-import { enqueueLighthouseJob, getLighthouseJob } from '../services/lighthouseJobService.js';
+import { enqueueLighthouseJob, getLighthouseJob, retryLighthouseJob } from '../services/lighthouseJobService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const lighthouseRouter = Router();
@@ -91,5 +91,29 @@ lighthouseRouter.get(
       return res.status(404).json({ error: 'Job not found' });
     }
     res.json(job);
+  })
+);
+
+// Re-runs a job via BullMQ's own retry (the same action Bull Board's dashboard performs
+// on the "Retry" button) — for programmatic use beyond the dashboard itself.
+lighthouseRouter.post(
+  '/jobs/:id/retry',
+  asyncHandler(async (req, res) => {
+    if (!UUID_RE.test(req.params.id)) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    let job;
+    try {
+      job = await retryLighthouseJob(req.params.id);
+    } catch (err) {
+      // BullMQ throws when the job isn't in a state it can retry from (e.g. still active).
+      return res.status(409).json({ error: err.message });
+    }
+
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    res.status(202).json(job);
   })
 );

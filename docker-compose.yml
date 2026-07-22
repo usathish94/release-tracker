@@ -13,6 +13,14 @@ services:
     volumes:
       - release_tracker_pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - release_tracker_redisdata:/data
+
   api:
     build: .
     restart: unless-stopped
@@ -50,8 +58,16 @@ services:
       LIGHTHOUSE_AUTH_LOGIN_URL: ${LIGHTHOUSE_AUTH_LOGIN_URL:-}
       LIGHTHOUSE_AUTH_USERNAME: ${LIGHTHOUSE_AUTH_USERNAME:-}
       LIGHTHOUSE_AUTH_PASSWORD: ${LIGHTHOUSE_AUTH_PASSWORD:-}
+      # Hardcoded (not ${REDIS_URL}): inside the compose network Redis is reachable at
+      # the "redis" service name, not "localhost" (which is what a host-run `npm run dev`
+      # would use instead).
+      REDIS_URL: redis://redis:6379
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       - postgres
+      - redis
 
 volumes:
   release_tracker_pgdata:
+  release_tracker_redisdata:

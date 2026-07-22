@@ -78,5 +78,16 @@ export const env = {
     // passwordSelector: process.env.LIGHTHOUSE_AUTH_PASSWORD_SELECTOR || 'input[type="password"]'
     usernameSelector: 'input[name="email"]',
     passwordSelector: 'input[type="password"]'
+  },
+  // Deliberately NOT required(): unlike databaseUrl/cricketApiKey, a missing/misconfigured
+  // Redis must not crash the whole app (cricket-match tracking, webhooks, etc. don't need
+  // it) — only the Lighthouse queue degrades, the same way Kafka already does when
+  // KAFKA_BROKERS is unset. See src/services/redisConnection.js.
+  redisUrl: process.env.REDIS_URL || null,
+  // Protects /admin/queues (the Bull Board dashboard). Left unset means the dashboard
+  // route isn't mounted at all rather than being served unprotected.
+  admin: {
+    username: process.env.ADMIN_USERNAME || null,
+    password: process.env.ADMIN_PASSWORD || null
   }
 };
