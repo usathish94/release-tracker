@@ -7,15 +7,23 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const assistantRouter = Router();
 
+// Body is one of:
+//  - { message }                       - fresh conversation
+//  - { message, history }              - fresh turn in an existing conversation
+//  - { conversationState, approvals }  - resumes a turn that came back with
+//    requiresApproval: true (e.g. from broadcast_webhook_test); approvals is
+//    { [toolUseId]: true|false }, keyed by the ids in that response's
+//    pendingApprovals. Response is either { reply, toolCalls } or
+//    { requiresApproval: true, pendingApprovals, conversationState }.
 assistantRouter.post(
   '/chat',
   asyncHandler(async (req, res) => {
-    const { message } = req.body;
-    if (!message || typeof message !== 'string') {
+    const { message, history, conversationState, approvals } = req.body;
+    if (!conversationState && (!message || typeof message !== 'string')) {
       return res.status(400).json({ error: 'Body must include a "message" string.' });
     }
-    const { reply, toolCalls } = await chatWithTools(message);
-    res.json({ reply, toolCalls });
+    const result = await chatWithTools({ message, history, conversationState, approvals });
+    res.json(result);
   })
 );
 

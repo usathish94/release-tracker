@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from '../config/env.js';
 import { getMatch } from './matchService.js';
 import { loadSkill } from './skillService.js';
+import { withTelemetry } from '../lib/telemetry.js';
 
 let anthropic;
 function client() {
@@ -24,12 +25,18 @@ export async function summarizeMatch(matchId) {
     status: match.status,
   });
 
-  const response = await client().messages.create({
-    model: env.claudeModel,
-    max_tokens: 300,
-    system: skill.instructions,
-    messages: [{ role: 'user', content: matchJson }],
-  });
+  // cache_control on the skill instructions pays off once this skill (or the
+  // model) grows past the per-model minimum cacheable prefix (~1-4K tokens
+  // depending on model - see shared/prompt-caching.md); harmless no-op below it.
+  const response = await withTelemetry(client()).create(
+    {
+      model: env.claudeModel,
+      max_tokens: 300,
+      system: [{ type: 'text', text: skill.instructions, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: matchJson }],
+    },
+    { route: 'match-summary' }
+  );
 
   return response.content.find((block) => block.type === 'text')?.text ?? null;
 }

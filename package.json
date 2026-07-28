@@ -9,6 +9,7 @@
     "dev": "node --watch src/index.js",
     "db:migrate": "node src/db/migrate.js",
     "telegram:set-webhook": "node src/scripts/setTelegramWebhook.js",
+    "eval": "node evals/match-summary.eval.js",
     "lint": "eslint .",
     "build": "esbuild src/index.js --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/index.cjs --minify"
   },

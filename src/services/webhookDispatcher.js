@@ -57,3 +57,26 @@ export async function sendTestPayload(subscriber) {
   await deliver(subscriber, payload);
   return payload;
 }
+
+/**
+ * Sends a real test payload to every subscriber for a match (or every global
+ * subscriber, if the match has none). Used by the assistant's
+ * `broadcast_webhook_test` tool - deliberately kept separate from
+ * notifyMatchUpdate() so a test broadcast can never accidentally look like a
+ * real score-update delivery to a subscriber.
+ */
+export async function broadcastTestPayload(matchId) {
+  const payload = {
+    event: 'webhook.test',
+    message: 'This is a test delivery from release-tracker',
+    timestamp: new Date().toISOString(),
+  };
+
+  const { rows: subscribers } = await pool.query(
+    'SELECT * FROM webhook_subscribers WHERE active = true AND (match_id = $1 OR match_id IS NULL)',
+    [matchId]
+  );
+
+  await Promise.all(subscribers.map((subscriber) => deliver(subscriber, payload)));
+  return { notifiedCount: subscribers.length, payload };
+}

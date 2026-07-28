@@ -20,7 +20,7 @@ export async function runSkillForInput(input) {
   const response = await client().messages.create({
     model: env.claudeModel,
     max_tokens: 300,
-    system: skill.instructions,
+    system: [{ type: 'text', text: skill.instructions, cache_control: { type: 'ephemeral' } }],
     messages: [{ role: 'user', content: input }],
   });
 

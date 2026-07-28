@@ -38,6 +38,8 @@ const SYSTEM_PROMPT = [
   'You are the release-tracker assistant. You can answer any question the user asks.',
   'For questions about cricket matches, scores, or tournaments, prefer the list_matches / get_match tools',
   '(this app\'s own tracked match data) over general web search.',
+  'For cricket rules questions (LBW, DLS, follow-on, powerplay, super over, no-ball), use the',
+  'explain_cricket_rule tool rather than answering from general knowledge.',
   'For anything else - general knowledge, current events, or topics the cricket tools do not cover - use web_search.',
 ].join(' ');
 
@@ -89,7 +91,7 @@ export async function streamChat(message, sse, { signal } = {}) {
       const stream = anthropicClient().messages.stream({
         model: env.claudeModel,
         max_tokens: caps.maxTokens,
-        system: SYSTEM_PROMPT,
+        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         thinking: caps.thinking,
         ...(caps.outputConfig ? { output_config: caps.outputConfig } : {}),
         tools,
