@@ -24,13 +24,18 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             /pr-review
 
             Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
-            This is an unattended CI run, so once your review is ready, post
-            it as a single PR comment. Comment only -- never approve,
-            request changes, merge, or push commits.
+            This is an unattended CI run. Post each finding as its own inline
+            comment on the exact diff line it applies to, using the
+            mcp__github_inline_comment__create_inline_comment tool -- do not
+            bundle findings into one big comment. If you find nothing worth
+            flagging, post one short top-level comment saying so via
+            `gh pr comment`. Comment only -- never approve, request changes,
+            merge, or push commits.
           claude_args: |
-            --allowedTools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*)"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*)"
             --max-turns 15

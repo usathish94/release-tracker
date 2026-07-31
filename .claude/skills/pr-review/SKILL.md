@@ -52,48 +52,42 @@ For each finding, note severity (blocking / suggestion / nit) and cite the exact
 
 ## 4. Report format
 
-Structure the review as:
+Prefer **one comment per finding, attached to the exact diff line it's about** — not one big summary comment. Each finding stands alone:
 
-```markdown
-## Summary
-<1-3 sentence overview of what the PR/MR does and your overall take>
-
-## Findings
-### Blocking
-- `path/to/file.js:42` — <issue and why it matters>
-
-### Suggestions
-- `path/to/file.js:10` — <issue>
-
-### Nits
-- `path/to/file.js:5` — <issue>
-
-(omit any section with nothing in it — if there are no findings at all, say so plainly instead of inventing filler comments)
 ```
+[Blocking|Suggestion|Nit] <the issue and why it matters, in 1-3 sentences>
+```
+
+Keep each one short enough to read at a glance on that line. If there are zero findings, don't invent filler — post a single short top-level comment saying the diff looked clean instead of going line-by-line.
 
 ## 5. Posting the review back
 
-**Interactive session (a person is driving)**: show the review in chat first and ask before posting anything to the PR/MR — posting a comment is a visible, hard-to-fully-undo action on a shared system.
+**Interactive session (a person is driving)**: show the findings in chat first and ask before posting anything to the PR/MR — posting comments is a visible, hard-to-fully-undo action on a shared system.
 
 **Unattended CI run** (invoked by a `pull_request`/`merge_request` pipeline, no human in the loop this turn): posting is the entire point of the job, so post automatically once the review is complete — that authorization comes from the person who set up the CI workflow, not from this session. Still, only ever **comment**. Never approve, request-changes-block, merge, or push commits — a human makes those calls.
 
-GitHub:
-```bash
-gh pr comment <N> --body-file <review.md>
-```
+**GitHub, per-line (preferred)** — when the `mcp__github_inline_comment__create_inline_comment` tool is available (it's auto-loaded for `pull_request`-triggered CI runs), call it once per finding with the file path, line number, and the finding's text. It attaches directly to that diff line without touching approval state.
 
-GitLab, with `glab` available (local use):
+**GitHub, no inline tool available (e.g. interactive/local use)** — build one PR review with an inline comment per finding instead of separate top-level comments:
 ```bash
-glab mr note <N> --message-file <review.md>
+gh api repos/{owner}/{repo}/pulls/<N>/reviews -X POST \
+  -f event=COMMENT \
+  -f 'comments[][path]=path/to/file.js' -F 'comments[][line]=42' -f 'comments[][body]=<finding text>' \
+  # repeat the comments[] triplet per finding
 ```
+If there's nothing to flag, skip the review and just do `gh pr comment <N> --body-file <review.md>` with a short "looks clean" note.
 
-GitLab in CI without `glab` installed — use the REST API directly with the job's own token (no extra credentials needed for same-project MRs):
+**GitLab, per-line** — use the discussions API with a `position` object so the note anchors to the diff line (needs `base_sha`/`start_sha`/`head_sha` from the MR's diff refs, and `new_path`/`new_line`):
 ```bash
 curl --request POST \
   --header "JOB-TOKEN: $CI_JOB_TOKEN" \
-  --form "body=<review.md" \
-  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+  --form "body=<finding text>" \
+  --form "position[position_type]=text" \
+  --form "position[base_sha]=<base_sha>" --form "position[start_sha]=<start_sha>" --form "position[head_sha]=<head_sha>" \
+  --form "position[new_path]=path/to/file.js" --form "position[new_line]=42" \
+  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/discussions"
 ```
+`glab` (local use) doesn't have a dedicated inline-note command, so use `glab api` the same way, or fall back to one `glab mr note <N> --message-file <review.md>` if per-line positioning isn't worth the overhead for a small MR.
 
 ## Guardrails
 
