@@ -32,3 +32,24 @@ Output:
 > England vs South Africa has finished, with the chasing/bowled-out side
 > closing on 150 all out in 38.0 overs. That's a low total for a completed
 > innings — bowlers had the upper hand.
+
+## Computing run rate precisely (code-execution sessions only)
+
+`scripts/run_rate.py` computes exact run rate and required run rate instead
+of leaving that arithmetic to the model. **This only applies when this skill
+is loaded into a code-execution container** (via the Skills API + the
+`code_execution` tool - see `scripts/demo-run-with-code-execution.mjs`); it
+has no effect when this file is read as a plain system prompt (this app's
+normal loading path via `src/services/skillService.js` ->
+`summaryService.js`), since there's no sandbox there to run anything in.
+
+When code execution is available and the input includes a `target` and
+`total_overs` (chase context), run:
+
+```bash
+python3 scripts/run_rate.py '<the input JSON, unmodified>'
+```
+
+and use its output for the run-rate / required-rate figures instead of
+computing them yourself. If the script errors or code execution isn't
+available, fall back to the normal instructions above.
