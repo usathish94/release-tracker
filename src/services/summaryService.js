@@ -17,6 +17,7 @@ export async function summarizeMatch(matchId) {
   const match = await getMatch(matchId);
   if (!match) return null;
 
+  // Skill load
   const skill = loadSkill('match-summary');
   const matchJson = JSON.stringify({
     teams: `${match.team1} vs ${match.team2}`,
